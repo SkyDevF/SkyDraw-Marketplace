@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyDraw Marketplace - ตลาดกลางนักวาดภาพ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>🎨 SkyDraw</h2>
+            </div>
+            <div class="nav-menu" id="nav-menu">
+                <a href="#home" class="nav-link">หน้าแรก</a>
+                <a href="#explore" class="nav-link">ค้นหาร้าน</a>
+                <div class="nav-auth" id="nav-auth">
+                    <button type="button" class="btn btn-outline" onclick="showLogin()">เข้าสู่ระบบ</button>
+                    <button type="button" class="btn btn-primary" onclick="showRegister()">สมัครสมาชิก</button>
+                </div>
+                <div class="nav-user" id="nav-user">
+                    <span id="user-name"></span>
+                    <button type="button" class="btn btn-outline" onclick="logout()">ออกจากระบบ</button>
+                </div>
+            </div>
+            <div class="nav-toggle" id="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content">
+        <!-- Home Section -->
+        <section id="home" class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>ยินดีต้อนรับสู่ SkyDraw Marketplace</h1>
+                    <p>ตลาดกลางสำหรับนักวาดภาพและลูกค้า พบกับผลงานศิลปะคุณภาพสูงและบริการวาดภาพตามสั่ง</p>
+                    <div class="hero-buttons">
+                        <button type="button" class="btn btn-primary btn-large" onclick="showExplore()">เริ่มค้นหาร้าน</button>
+                        <button type="button" class="btn btn-outline btn-large" onclick="showRegister('artist')">เป็นศิลปิน</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Shops -->
+        <section class="featured-shops">
+            <div class="container">
+                <h2>ร้านเด่น</h2>
+                <div class="shops-grid" id="featured-shops">
+                    <!-- Shops will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Explore Section -->
+        <section id="explore" class="explore" style="display: none;">
+            <div class="container">
+                <h2>ค้นหาร้านวาดภาพ</h2>
+                <div class="search-bar">
+                    <label for="search-input" class="sr-only">ค้นหาร้าน</label>
+                    <input type="text" id="search-input" placeholder="ค้นหาร้าน..." title="ค้นหาร้าน">
+                    <button type="button" class="btn btn-primary" onclick="searchShops()">ค้นหา</button>
+                </div>
+                <div class="shops-grid" id="shops-grid">
+                    <!-- Shops will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Shop Detail -->
+        <section id="shop-detail" class="shop-detail" style="display: none;">
+            <div class="container">
+                <button type="button" class="btn btn-outline" onclick="showExplore()">← กลับ</button>
+                <div id="shop-info"></div>
+                <div class="artworks-section">
+                    <h3>ผลงาน</h3>
+                    <div class="artworks-grid" id="artworks-grid"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dashboard Sections -->
+        <section id="customer-dashboard" class="dashboard" style="display: none;">
+            <div class="container">
+                <h2>แดชบอร์ดลูกค้า</h2>
+                <div class="dashboard-tabs">
+                    <button type="button" class="tab-btn active" onclick="showTab('orders')">คำสั่งซื้อของฉัน</button>
+                    <button type="button" class="tab-btn" onclick="showTab('messages')">ข้อความ</button>
+                </div>
+                <div id="customer-orders-tab" class="tab-content">
+                    <div id="customer-orders"></div>
+                </div>
+                <div id="messages-tab" class="tab-content">
+                    <div id="customer-messages"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="artist-dashboard" class="dashboard" style="display: none;">
+            <div class="container">
+                <h2>แดชบอร์ดศิลปิน</h2>
+                <div class="dashboard-tabs">
+                    <button type="button" class="tab-btn active" onclick="showTab('shop-manage')">จัดการร้าน</button>
+                    <button type="button" class="tab-btn" onclick="showTab('artworks')">ผลงาน</button>
+                    <button type="button" class="tab-btn" onclick="showTab('orders')">คำสั่งซื้อ</button>
+                </div>
+                <div id="shop-manage-tab" class="tab-content">
+                    <div id="shop-management"></div>
+                </div>
+                <div id="artworks-tab" class="tab-content">
+                    <div id="artist-artworks"></div>
+                </div>
+                <div id="artist-orders-tab" class="tab-content">
+                    <div id="artist-orders"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="admin-dashboard" class="dashboard" style="display: none;">
+            <div class="container">
+                <h2>แดชบอร์ดแอดมิน</h2>
+                <div class="dashboard-tabs">
+                    <button type="button" class="tab-btn active" onclick="showTab('stats')">สถิติ</button>
+                    <button type="button" class="tab-btn" onclick="showTab('pending-shops')">ร้านรออนุมัติ</button>
+                    <button type="button" class="tab-btn" onclick="showTab('all-orders')">คำสั่งซื้อทั้งหมด</button>
+                </div>
+                <div id="stats-tab" class="tab-content">
+                    <div id="admin-stats"></div>
+                </div>
+                <div id="pending-shops-tab" class="tab-content">
+                    <div id="pending-shops"></div>
+                </div>
+                <div id="all-orders-tab" class="tab-content">
+                    <div id="all-orders"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('login-modal')">&times;</span>
+            <h2>เข้าสู่ระบบ</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">อีเมล</label>
+                    <input type="email" id="login-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">รหัสผ่าน</label>
+                    <input type="password" id="login-password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">เข้าสู่ระบบ</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('register-modal')">&times;</span>
+            <h2>สมัครสมาชิก</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="register-name">ชื่อ</label>
+                    <input type="text" id="register-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email">อีเมล</label>
+                    <input type="email" id="register-email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">รหัสผ่าน</label>
+                    <input type="password" id="register-password" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-role">ประเภทบัญชี</label>
+                    <select id="register-role" name="role" required title="เลือกประเภทบัญชี">
+                        <option value="customer">ลูกค้า</option>
+                        <option value="artist">ศิลปิน</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">สมัครสมาชิก</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="commission-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('commission-modal')">&times;</span>
+            <h2>สั่งวาดภาพ</h2>
+            <form id="commission-form">
+                <div class="form-group">
+                    <label for="commission-detail">รายละเอียดงาน</label>
+                    <textarea id="commission-detail" name="detail" rows="4" placeholder="อธิบายรายละเอียดงานที่ต้องการ..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="commission-price">ราคา (บาท)</label>
+                    <input type="number" id="commission-price" name="price" min="1" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">สั่งงาน</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
