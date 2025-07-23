@@ -300,18 +300,44 @@ const db = {
         .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
         .order('created_at', { ascending: true });
       
-      if (error) throw error;
-      return data || [];
+      if (error) {
+        console.error('Messages query error:', error);
+        throw error;
+      }
+      
+      // Format the data to include sender/receiver names
+      const formattedData = (data || []).map(msg => ({
+        ...msg,
+        sender_name: msg.sender?.name || 'Unknown',
+        receiver_name: msg.receiver?.name || 'Unknown'
+      }));
+      
+      return formattedData;
     },
 
     async create(messageData) {
+      console.log('Creating message:', messageData);
+      
       const { data, error } = await supabase
         .from('messages')
-        .insert(messageData)
-        .select()
+        .insert({
+          sender_id: messageData.sender_id,
+          receiver_id: messageData.receiver_id,
+          message: messageData.message
+        })
+        .select(`
+          *,
+          sender:users!messages_sender_id_fkey(name),
+          receiver:users!messages_receiver_id_fkey(name)
+        `)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Message creation error:', error);
+        throw error;
+      }
+      
+      console.log('Message created successfully:', data);
       return data;
     }
   },

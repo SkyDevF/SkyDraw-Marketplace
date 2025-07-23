@@ -104,4 +104,44 @@ router.post('/message', authenticateToken, async (req, res) => {
   }
 });
 
+// Get conversations
+router.get('/conversations', authenticateToken, async (req, res) => {
+  try {
+    const { supabase } = require('../models/db');
+    const { data, error } = await supabase
+      .from('messages')
+      .select(`
+        *,
+        sender:users!messages_sender_id_fkey(id, name, avatar),
+        receiver:users!messages_receiver_id_fkey(id, name, avatar)
+      `)
+      .or(`sender_id.eq.${req.user.userId},receiver_id.eq.${req.user.userId}`)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Group by conversation partner
+    const conversations = {};
+    (data || []).forEach(msg => {
+      const otherId = msg.sender_id === req.user.userId ? msg.receiver_id : msg.sender_id;
+      const otherUser = msg.sender_id === req.user.userId ? msg.receiver : msg.sender;
+      
+      if (!conversations[otherId]) {
+        conversations[otherId] = {
+          other_user_id: otherId,
+          other_user_name: otherUser.name,
+          other_user_avatar: otherUser.avatar,
+          last_message: msg.message,
+          last_message_time: msg.created_at
+        };
+      }
+    });
+
+    res.json(Object.values(conversations));
+  } catch (error) {
+    console.error('Get conversations error:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาด' });
+  }
+});
+
 module.exports = router;

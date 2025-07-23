@@ -26,37 +26,95 @@ router.post('/create', authenticateToken, async (req, res) => {
   try {
     const { artist_id, artwork_id, detail, price } = req.body;
 
+    // Validate input
+    if (!artist_id) {
+      return res.status(400).json({ message: 'กรุณาระบุศิลปิน' });
+    }
+
+    if (!detail || detail.trim().length < 10) {
+      return res.status(400).json({ message: 'กรุณาอธิบายรายละเอียดงานอย่างน้อย 10 ตัวอักษร' });
+    }
+
+    const orderPrice = parseFloat(price);
+    if (!orderPrice || orderPrice < 1 || orderPrice > 100000) {
+      return res.status(400).json({ message: 'กรุณากรอกราคาที่ถูกต้อง (1-100,000 บาท)' });
+    }
+
+    // Check if artist exists and is not the same as customer
+    if (artist_id === req.user.userId) {
+      return res.status(400).json({ message: 'ไม่สามารถสั่งงานจากตัวเองได้' });
+    }
+
+    const artist = await db.users.findById(artist_id);
+    if (!artist || artist.role !== 'artist') {
+      return res.status(404).json({ message: 'ไม่พบศิลปิน' });
+    }
+
+    console.log('🛒 Creating order:', { customer_id: req.user.userId, artist_id, price: orderPrice });
+
     // Create order
     const newOrder = await db.orders.create({
       customer_id: req.user.userId,
       artist_id,
-      artwork_id,
-      detail,
-      price
+      artwork_id: artwork_id || null,
+      detail: detail.trim(),
+      price: orderPrice,
+      status: 'waiting'
     });
 
     const orderId = newOrder.id;
+    console.log('✅ Order created:', orderId);
 
     // Generate PromptPay QR Code
-    const payload = generatePayload(process.env.PROMPTPAY_ID, { amount: parseFloat(price) });
-    const qrCodePath = `uploads/qr-${orderId}.png`;
-    
-    await QRCode.toFile(qrCodePath, payload);
+    try {
+      if (!process.env.PROMPTPAY_ID) {
+        console.warn('⚠️ PROMPTPAY_ID not configured, skipping QR generation');
+        return res.json({ 
+          message: 'สร้างคำสั่งซื้อสำเร็จ',
+          orderId,
+          qrCodePath: null
+        });
+      }
 
-    // Update order with QR code path
-    await db.orders.updateQRPath(orderId, qrCodePath);
+      const payload = generatePayload(process.env.PROMPTPAY_ID, { amount: orderPrice });
+      const qrCodePath = `uploads/qr-${orderId}.png`;
+      
+      await QRCode.toFile(qrCodePath, payload);
+      console.log('✅ QR Code generated:', qrCodePath);
 
-    // Send email notification to artist
-    await sendOrderNotification(artist_id, orderId, 'new_order');
+      // Update order with QR code path
+      await db.orders.updateQRPath(orderId, qrCodePath);
 
-    res.json({ 
-      message: 'สร้างคำสั่งซื้อสำเร็จ',
-      orderId,
-      qrCodePath: `/${qrCodePath}`
-    });
+      // Send email notification to artist (don't fail if email fails)
+      try {
+        await sendOrderNotification(artist_id, orderId, 'new_order');
+        console.log('✅ Email notification sent to artist');
+      } catch (emailError) {
+        console.warn('⚠️ Email notification failed:', emailError.message);
+      }
+
+      res.json({ 
+        message: 'สร้างคำสั่งซื้อสำเร็จ',
+        orderId,
+        qrCodePath: `/${qrCodePath}`
+      });
+    } catch (qrError) {
+      console.error('❌ QR Code generation failed:', qrError);
+      res.json({ 
+        message: 'สร้างคำสั่งซื้อสำเร็จ แต่ไม่สามารถสร้าง QR Code ได้',
+        orderId,
+        qrCodePath: null
+      });
+    }
   } catch (error) {
-    console.error('Create order error:', error);
-    res.status(500).json({ message: 'เกิดข้อผิดพลาด' });
+    console.error('❌ Create order error:', error);
+    
+    // Handle specific database errors
+    if (error.code === '23503') { // Foreign key constraint violation
+      return res.status(400).json({ message: 'ข้อมูลไม่ถูกต้อง' });
+    }
+    
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ กรุณาลองใหม่อีกครั้ง' });
   }
 });
 

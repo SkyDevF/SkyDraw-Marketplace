@@ -91,16 +91,43 @@ async function handleLogin(e) {
 async function handleRegister(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    // Validate form data
+    const name = formData.get('name').trim();
+    const email = formData.get('email').trim();
+    const password = formData.get('password');
+    const role = formData.get('role');
+    
+    // Client-side validation
+    if (!name || name.length < 2) {
+        showAlert('กรุณากรอกชื่อที่ถูกต้อง (อย่างน้อย 2 ตัวอักษร)', 'error');
+        return;
+    }
+    
+    if (!email || !isValidEmail(email)) {
+        showAlert('กรุณากรอกอีเมลที่ถูกต้อง', 'error');
+        return;
+    }
+    
+    if (!password || password.length < 6) {
+        showAlert('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'error');
+        return;
+    }
+    
+    // Show loading state
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
     
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                name: formData.get('name'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                role: formData.get('role')
+                name: name,
+                email: email,
+                password: password,
+                role: role
             })
         });
         
@@ -109,13 +136,27 @@ async function handleRegister(e) {
         if (response.ok) {
             closeModal('register-modal');
             showAlert('สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ', 'success');
-            showLogin();
+            // Clear form
+            e.target.reset();
+            // Show login modal
+            setTimeout(() => showLogin(), 1000);
         } else {
-            showAlert(data.message, 'error');
+            showAlert(data.message || 'เกิดข้อผิดพลาดในการสมัครสมาชิก', 'error');
         }
     } catch (error) {
-        showAlert('เกิดข้อผิดพลาด', 'error');
+        console.error('Register error:', error);
+        showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'error');
+    } finally {
+        // Remove loading state
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
     }
+}
+
+// Email validation helper
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 function logout() {
@@ -130,13 +171,13 @@ function logout() {
 // Navigation functions
 function showHome() {
     hideAllSections();
-    document.getElementById('home').style.display = 'block';
+    document.getElementById('home').classList.remove('hidden');
     loadFeaturedShops();
 }
 
 function showExplore() {
     hideAllSections();
-    document.getElementById('explore').style.display = 'block';
+    document.getElementById('explore').classList.remove('hidden');
     loadAllShops();
 }
 
@@ -156,15 +197,15 @@ function showDashboard() {
     
     switch (currentUser.role) {
         case 'customer':
-            document.getElementById('customer-dashboard').style.display = 'block';
+            document.getElementById('customer-dashboard').classList.remove('hidden');
             loadCustomerDashboard();
             break;
         case 'artist':
-            document.getElementById('artist-dashboard').style.display = 'block';
+            document.getElementById('artist-dashboard').classList.remove('hidden');
             loadArtistDashboard();
             break;
         case 'admin':
-            document.getElementById('admin-dashboard').style.display = 'block';
+            document.getElementById('admin-dashboard').classList.remove('hidden');
             loadAdminDashboard();
             break;
     }
@@ -173,7 +214,7 @@ function showDashboard() {
 function hideAllSections() {
     const sections = ['home', 'explore', 'shop-detail', 'customer-dashboard', 'artist-dashboard', 'admin-dashboard'];
     sections.forEach(id => {
-        document.getElementById(id).style.display = 'none';
+        document.getElementById(id).classList.add('hidden');
     });
 }
 
@@ -228,7 +269,7 @@ async function showShopDetail(shopId) {
         const data = await response.json();
         
         hideAllSections();
-        document.getElementById('shop-detail').style.display = 'block';
+        document.getElementById('shop-detail').classList.remove('hidden');
         
         const shopInfo = document.getElementById('shop-info');
         shopInfo.innerHTML = `
@@ -277,6 +318,30 @@ function showCommissionModal(artistId) {
 async function handleCommission(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    // Validate form data
+    const detail = formData.get('detail').trim();
+    const price = parseFloat(formData.get('price'));
+    
+    if (!detail || detail.length < 10) {
+        showAlert('กรุณาอธิบายรายละเอียดงานอย่างน้อย 10 ตัวอักษร', 'error');
+        return;
+    }
+    
+    if (!price || price < 1) {
+        showAlert('กรุณากรอกราคาที่ถูกต้อง', 'error');
+        return;
+    }
+    
+    if (price > 100000) {
+        showAlert('ราคาไม่ควรเกิน 100,000 บาท', 'error');
+        return;
+    }
+    
+    // Show loading state
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
     
     try {
         const response = await fetch('/api/order/create', {
@@ -287,8 +352,8 @@ async function handleCommission(e) {
             },
             body: JSON.stringify({
                 artist_id: currentArtist,
-                detail: formData.get('detail'),
-                price: formData.get('price')
+                detail: detail,
+                price: price
             })
         });
         
@@ -297,12 +362,19 @@ async function handleCommission(e) {
         if (response.ok) {
             closeModal('commission-modal');
             showAlert('สร้างคำสั่งซื้อสำเร็จ', 'success');
+            // Clear form
+            e.target.reset();
             showQRCode(data.qrCodePath, data.orderId);
         } else {
-            showAlert(data.message, 'error');
+            showAlert(data.message || 'เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ', 'error');
         }
     } catch (error) {
-        showAlert('เกิดข้อผิดพลาด', 'error');
+        console.error('Commission error:', error);
+        showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง', 'error');
+    } finally {
+        // Remove loading state
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
     }
 }
 
@@ -310,17 +382,50 @@ function showQRCode(qrPath, orderId) {
     const qrModal = document.createElement('div');
     qrModal.className = 'modal';
     qrModal.style.display = 'block';
-    qrModal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-            <h2>ชำระเงิน</h2>
-            <div class="qr-display">
-                <img src="${qrPath}" alt="QR Code">
-                <p>สแกน QR Code เพื่อชำระเงิน</p>
-                <button class="btn btn-primary" onclick="confirmPayment(${orderId})">ยืนยันการชำระเงิน</button>
+    qrModal.id = 'qr-payment-modal';
+    
+    if (qrPath) {
+        qrModal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                <h2>ชำระเงิน</h2>
+                <div class="qr-display">
+                    <img src="${qrPath}" alt="QR Code" style="max-width: 250px; border: 2px solid #e2e8f0; border-radius: 8px;">
+                    <p style="margin: 1rem 0; color: #64748b;">สแกน QR Code เพื่อชำระเงินผ่าน PromptPay</p>
+                    <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                        <p style="font-size: 0.875rem; color: #64748b; margin: 0;">
+                            หลังจากชำระเงินแล้ว กรุณากดปุ่มยืนยันการชำระเงิน<br>
+                            ศิลปินจะได้รับแจ้งเตือนและเริ่มทำงาน
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: center;">
+                        <button class="btn btn-outline" onclick="this.closest('.modal').remove()">ปิด</button>
+                        <button class="btn btn-primary" onclick="confirmPayment(${orderId})">ยืนยันการชำระเงิน</button>
+                    </div>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    } else {
+        qrModal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                <h2>คำสั่งซื้อสำเร็จ</h2>
+                <div class="qr-display">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                    <p>คำสั่งซื้อของคุณถูกสร้างเรียบร้อยแล้ว</p>
+                    <p style="color: #64748b; margin: 1rem 0;">
+                        ระบบ QR Code ยังไม่พร้อมใช้งาน<br>
+                        กรุณาติดต่อศิลปินโดยตรงเพื่อชำระเงิน
+                    </p>
+                    <div style="display: flex; gap: 1rem; justify-content: center;">
+                        <button class="btn btn-outline" onclick="this.closest('.modal').remove()">ปิด</button>
+                        <button class="btn btn-primary" onclick="confirmPayment(${orderId})">ยืนยันการชำระเงิน</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
     document.body.appendChild(qrModal);
 }
 
@@ -406,42 +511,62 @@ async function loadArtistDashboard() {
         // Artworks
         const artworks = document.getElementById('artist-artworks');
         artworks.innerHTML = `
-            <div class="add-artwork-form">
+            <div class="artwork-upload info-card">
                 <h3>เพิ่มผลงานใหม่</h3>
                 <form id="artwork-form" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label>ชื่อผลงาน</label>
-                        <input type="text" name="title" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ชื่อผลงาน</label>
+                            <input type="text" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label>ราคา (บาท)</label>
+                            <input type="number" name="price" min="1" required>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>คำอธิบาย</label>
-                        <textarea name="description" rows="3"></textarea>
+                        <textarea name="description" rows="3" placeholder="อธิบายรายละเอียดผลงาน..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>ราคา (บาท)</label>
-                        <input type="number" name="price" min="1" required>
+                        <label>รูปภาพผลงาน</label>
+                        <div class="file-upload">
+                            <input type="file" name="image" accept="image/*" required id="artwork-image">
+                            <label for="artwork-image" class="file-upload-label">
+                                <div class="file-upload-icon">📷</div>
+                                <div>คลิกเพื่อเลือกรูปภาพ</div>
+                                <small>รองรับ JPG, PNG, GIF (ขนาดไม่เกิน 5MB)</small>
+                            </label>
+                        </div>
+                        <div id="image-preview" class="mt-2"></div>
                     </div>
-                    <div class="form-group">
-                        <label>รูปภาพ</label>
-                        <input type="file" name="image" accept="image/*" required>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">เพิ่มผลงาน</button>
                     </div>
-                    <button type="submit" class="btn btn-primary">เพิ่มผลงาน</button>
                 </form>
             </div>
-            <div class="artworks-list mt-3">
-                <h3>ผลงานของฉัน</h3>
-                <div class="artworks-grid">
-                    ${data.artworks.map(artwork => `
-                        <div class="artwork-card">
-                            <img src="${artwork.image_url}" alt="${artwork.title}">
-                            <div class="artwork-card-content">
-                                <h4>${artwork.title}</h4>
-                                <p>${artwork.description}</p>
-                                <div class="price">฿${artwork.price}</div>
+            <div class="info-card">
+                <h3>ผลงานของฉัน (${data.artworks.length} ชิ้น)</h3>
+                ${data.artworks.length > 0 ? `
+                    <div class="artworks-grid">
+                        ${data.artworks.map(artwork => `
+                            <div class="artwork-card">
+                                <img src="${artwork.image_url}" alt="${artwork.title}" onerror="this.src='/images/default-artwork.png'">
+                                <div class="artwork-card-content">
+                                    <h4>${artwork.title}</h4>
+                                    <p>${artwork.description || 'ไม่มีคำอธิบาย'}</p>
+                                    <div class="price">฿${artwork.price.toLocaleString()}</div>
+                                    <small class="text-muted">เพิ่มเมื่อ ${new Date(artwork.created_at).toLocaleDateString('th-TH')}</small>
+                                </div>
                             </div>
-                        </div>
-                    `).join('')}
-                </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎨</div>
+                        <p>ยังไม่มีผลงาน เริ่มเพิ่มผลงานแรกของคุณ</p>
+                    </div>
+                `}
             </div>
         `;
         
@@ -472,6 +597,9 @@ async function loadArtistDashboard() {
         // Setup form listeners
         document.getElementById('shop-form').addEventListener('submit', handleShopUpdate);
         document.getElementById('artwork-form').addEventListener('submit', handleArtworkAdd);
+        
+        // Setup image preview
+        document.getElementById('artwork-image').addEventListener('change', handleImagePreview);
         
     } catch (error) {
         console.error('Load artist dashboard error:', error);
@@ -557,7 +685,7 @@ function getStatusText(status) {
 function showTab(tabName) {
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.style.display = 'none';
+        tab.classList.add('hidden');
     });
     
     // Remove active class from all tab buttons
@@ -566,7 +694,7 @@ function showTab(tabName) {
     });
     
     // Show selected tab
-    document.getElementById(tabName + '-tab').style.display = 'block';
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
     
     // Add active class to clicked button
     event.target.classList.add('active');
@@ -706,9 +834,212 @@ async function rejectShop(shopId) {
     }
 }
 
+// Chat functions
+let currentChatUser = null;
+
+function showChat(artistId) {
+    if (!currentUser) {
+        showAlert('กรุณาเข้าสู่ระบบก่อน', 'error');
+        return;
+    }
+    currentChatUser = artistId;
+    document.getElementById('chat-modal').style.display = 'block';
+    loadMessages(artistId);
+}
+
+async function loadMessages(userId) {
+    try {
+        const response = await fetch(`/api/user/messages/${userId}`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const messages = await response.json();
+        
+        const container = document.getElementById('chat-messages');
+        container.innerHTML = messages.map(msg => `
+            <div class="message ${msg.sender_id === currentUser.id ? 'sent' : 'received'}">
+                <div>${msg.message}</div>
+                <div class="message-time">${new Date(msg.created_at).toLocaleString('th-TH')}</div>
+            </div>
+        `).join('');
+        
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+    } catch (error) {
+        console.error('Load messages error:', error);
+    }
+}
+
+async function sendMessage() {
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    try {
+        const response = await fetch('/api/user/message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                receiver_id: currentChatUser,
+                message: message
+            })
+        });
+        
+        if (response.ok) {
+            input.value = '';
+            loadMessages(currentChatUser);
+        }
+    } catch (error) {
+        showAlert('เกิดข้อผิดพลาด', 'error');
+    }
+}
+
+function handleMessageKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+}
+
 // Search function
 async function searchShops() {
     const query = document.getElementById('search-input').value;
-    // Implementation for search functionality
-    loadAllShops(); // For now, just reload all shops
+    try {
+        const response = await fetch('/api/user/shops');
+        const shops = await response.json();
+        
+        const filteredShops = shops.filter(shop => 
+            shop.name.toLowerCase().includes(query.toLowerCase()) ||
+            shop.owner_name.toLowerCase().includes(query.toLowerCase()) ||
+            (shop.bio && shop.bio.toLowerCase().includes(query.toLowerCase()))
+        );
+        
+        const container = document.getElementById('shops-grid');
+        container.innerHTML = filteredShops.map(shop => `
+            <div class="shop-card fade-in" onclick="showShopDetail(${shop.id})">
+                <img src="${shop.owner_avatar || '/images/default-avatar.png'}" alt="${shop.name}">
+                <div class="shop-card-content">
+                    <h3>${shop.name}</h3>
+                    <p>โดย ${shop.owner_name}</p>
+                    <p>${shop.bio || 'ยินดีต้อนรับสู่ร้านของเรา'}</p>
+                    <small>${shop.artwork_count} ผลงาน</small>
+                </div>
+            </div>
+        `).join('');
+        
+        if (filteredShops.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>ไม่พบร้านที่ค้นหา</p></div>';
+        }
+    } catch (error) {
+        console.error('Search shops error:', error);
+    }
+} ${shop.
+owner_name}</p>
+                    <p>${shop.bio || 'ยินดีต้อนรับสู่ร้านของเรา'}</p>
+                    <small>${shop.artwork_count} ผลงาน</small>
+                </div>
+            </div>
+        `).join('');
+        
+        if (filteredShops.length === 0) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><p>ไม่พบร้านที่ค้นหา</p></div>';
+        }
+    } catch (error) {
+        console.error('Search shops error:', error);
+    }
+}
+
+// Image preview function
+function handleImagePreview(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('image-preview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <div style="margin-top: 1rem;">
+                    <img src="${e.target.result}" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #e2e8f0;">
+                    <p style="margin-top: 0.5rem; color: #64748b; font-size: 0.875rem;">ตัวอย่างรูปภาพ</p>
+                </div>
+            `;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = '';
+    }
+}
+
+// Load customer messages
+async function loadCustomerMessages() {
+    try {
+        // Get all conversations for the customer
+        const response = await fetch('/api/user/conversations', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (response.ok) {
+            const conversations = await response.json();
+            const container = document.getElementById('customer-messages');
+            
+            if (conversations.length > 0) {
+                container.innerHTML = conversations.map(conv => `
+                    <div class="order-card" onclick="showChat(${conv.other_user_id})">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <img src="${conv.other_user_avatar || '/images/default-avatar.png'}" 
+                                 alt="${conv.other_user_name}" 
+                                 style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                            <div style="flex: 1;">
+                                <h4>${conv.other_user_name}</h4>
+                                <p style="color: #64748b;">${conv.last_message || 'ยังไม่มีข้อความ'}</p>
+                                <small>${conv.last_message_time ? new Date(conv.last_message_time).toLocaleString('th-TH') : ''}</small>
+                            </div>
+                            <button class="btn btn-outline btn-sm">แชท</button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p>ยังไม่มีการสนทนา เริ่มแชทกับศิลปินได้จากหน้าร้าน</p>
+                    </div>
+                `;
+            }
+        }
+    } catch (error) {
+        console.error('Load customer messages error:', error);
+        document.getElementById('customer-messages').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                <p>ยังไม่มีการสนทนา เริ่มแชทกับศิลปินได้จากหน้าร้าน</p>
+            </div>
+        `;
+    }
+}
+
+// Enhanced tab switching with proper loading
+function showTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+    
+    // Load content based on tab
+    if (tabName === 'messages' && currentUser.role === 'customer') {
+        loadCustomerMessages();
+    }
 }
