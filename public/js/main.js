@@ -456,26 +456,62 @@ async function loadCustomerDashboard() {
         const response = await fetch('/api/order/my-orders', {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load orders');
+        }
+        
         const orders = await response.json();
+        console.log('Customer orders loaded:', orders.length);
         
         const container = document.getElementById('customer-orders');
-        container.innerHTML = orders.map(order => `
-            <div class="order-card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h4>คำสั่งซื้อ #${order.id}</h4>
-                        <p>ศิลปิน: ${order.artist_name}</p>
-                        <p>ราคา: ฿${order.price}</p>
-                        <p>รายละเอียด: ${order.detail}</p>
+        
+        if (orders.length > 0) {
+            container.innerHTML = orders.map(order => `
+                <div class="order-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <div style="flex: 1;">
+                            <h4 style="margin-bottom: 0.5rem; color: #1e293b;">คำสั่งซื้อ #${order.id}</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                                <p><strong>ศิลปิน:</strong> ${order.artist_name || 'ไม่ระบุ'}</p>
+                                <p><strong>ราคา:</strong> ฿${parseFloat(order.price).toLocaleString()}</p>
+                                <p><strong>วันที่สั่ง:</strong> ${new Date(order.created_at).toLocaleDateString('th-TH')}</p>
+                                <p><strong>สถานะ:</strong> <span class="order-status status-${order.status}">${getStatusText(order.status)}</span></p>
+                            </div>
+                            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                                <p style="margin: 0; color: #64748b;"><strong>รายละเอียด:</strong></p>
+                                <p style="margin: 0.5rem 0 0 0;">${order.detail}</p>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        ${order.status === 'waiting' ? `
+                            <button class="btn btn-primary btn-sm" onclick="showPaymentQR(${order.id})">ชำระเงิน</button>
+                        ` : ''}
+                        <button class="btn btn-outline btn-sm" onclick="showChat(${order.artist_id})">แชทกับศิลปิน</button>
+                        ${order.status === 'paid' ? `
+                            <button class="btn btn-outline btn-sm" onclick="confirmPayment(${order.id})">ยืนยันการชำระเงิน</button>
+                        ` : ''}
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>ยังไม่มีคำสั่งซื้อ</p>
+                    <button class="btn btn-primary" onclick="showExplore()">เริ่มค้นหาศิลปิน</button>
+                </div>
+            `;
+        }
     } catch (error) {
         console.error('Load customer dashboard error:', error);
+        document.getElementById('customer-orders').innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">⚠️</div>
+                <p>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+            </div>
+        `;
     }
 }
 
@@ -572,27 +608,55 @@ async function loadArtistDashboard() {
         
         // Orders
         const orders = document.getElementById('artist-orders');
-        orders.innerHTML = data.orders.map(order => `
-            <div class="order-card">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h4>คำสั่งซื้อ #${order.id}</h4>
-                        <p>ลูกค้า: ${order.customer_name}</p>
-                        <p>ราคา: ฿${order.price}</p>
-                        <p>รายละเอียด: ${order.detail}</p>
-                    </div>
-                    <div>
-                        <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
-                        <select onchange="updateOrderStatus(${order.id}, this.value)" style="margin-left: 1rem;">
-                            <option value="waiting" ${order.status === 'waiting' ? 'selected' : ''}>รอชำระเงิน</option>
-                            <option value="paid" ${order.status === 'paid' ? 'selected' : ''}>ชำระแล้ว</option>
-                            <option value="working" ${order.status === 'working' ? 'selected' : ''}>กำลังทำงาน</option>
-                            <option value="done" ${order.status === 'done' ? 'selected' : ''}>เสร็จสิ้น</option>
-                        </select>
+        if (data.orders.length > 0) {
+            orders.innerHTML = data.orders.map(order => `
+                <div class="order-card">
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <div style="flex: 1;">
+                                <h4 style="margin-bottom: 0.5rem; color: #1e293b;">คำสั่งซื้อ #${order.id}</h4>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem;">
+                                    <p><strong>ลูกค้า:</strong> ${order.customer_name}</p>
+                                    <p><strong>อีเมล:</strong> ${order.customer_email}</p>
+                                    <p><strong>ราคา:</strong> ฿${parseFloat(order.price).toLocaleString()}</p>
+                                    <p><strong>วันที่สั่ง:</strong> ${new Date(order.created_at).toLocaleDateString('th-TH')}</p>
+                                </div>
+                                <div style="background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                                    <p style="margin: 0; color: #64748b;"><strong>รายละเอียดงาน:</strong></p>
+                                    <p style="margin: 0.5rem 0 0 0;">${order.detail}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
+                                <select onchange="updateOrderStatus(${order.id}, this.value)" 
+                                        style="padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px;">
+                                    <option value="waiting" ${order.status === 'waiting' ? 'selected' : ''}>รอชำระเงิน</option>
+                                    <option value="paid" ${order.status === 'paid' ? 'selected' : ''}>ชำระแล้ว</option>
+                                    <option value="working" ${order.status === 'working' ? 'selected' : ''}>กำลังทำงาน</option>
+                                    <option value="done" ${order.status === 'done' ? 'selected' : ''}>เสร็จสิ้น</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-outline btn-sm" onclick="showChat(${order.customer_id})">แชทกับลูกค้า</button>
+                                ${order.status === 'done' ? '' : `
+                                    <button class="btn btn-primary btn-sm" onclick="updateOrderStatus(${order.id}, 'working')">เริ่มทำงาน</button>
+                                `}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `).join('');
+        } else {
+            orders.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>ยังไม่มีคำสั่งซื้อ</p>
+                    <p style="color: #64748b;">เมื่อมีลูกค้าสั่งงาน คำสั่งซื้อจะแสดงที่นี่</p>
+                </div>
+            `;
+        }
         
         // Setup form listeners
         document.getElementById('shop-form').addEventListener('submit', handleShopUpdate);
@@ -1041,5 +1105,507 @@ function showTab(tabName) {
     // Load content based on tab
     if (tabName === 'messages' && currentUser.role === 'customer') {
         loadCustomerMessages();
+    }
+}
+/
+/ Tab switching function
+function showTab(tabName, buttonElement) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    const tabElement = document.getElementById(tabName + '-tab');
+    if (tabElement) {
+        tabElement.classList.remove('hidden');
+    }
+    
+    // Add active class to clicked button
+    if (buttonElement) {
+        buttonElement.classList.add('active');
+    }
+    
+    // Load content based on tab
+    if (tabName === 'messages' && currentUser && currentUser.role === 'customer') {
+        loadCustomerMessages();
+    }
+}
+
+// Close modal function
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Show alert function
+function showAlert(message, type = 'info') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        padding: 1rem 2rem;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        z-index: 3000;
+        animation: slideIn 0.3s ease-out;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    `;
+    alert.textContent = message;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 4000);
+}
+
+// Email validation helper
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Image preview function
+function handleImagePreview(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('image-preview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <div style="margin-top: 1rem;">
+                    <img src="${e.target.result}" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #e2e8f0;">
+                    <p style="margin-top: 0.5rem; color: #64748b; font-size: 0.875rem;">ตัวอย่างรูปภาพ</p>
+                </div>
+            `;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = '';
+    }
+}
+// Dashboa
+rd functions
+async function loadCustomerDashboard() {
+    try {
+        console.log('Loading customer dashboard...');
+        const response = await fetch('/api/order/my-orders', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to load orders');
+        }
+        
+        const orders = await response.json();
+        console.log('Loaded orders:', orders.length);
+        
+        const container = document.getElementById('customer-orders');
+        if (orders.length > 0) {
+            container.innerHTML = orders.map(order => `
+                <div class="order-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 0.5rem 0; color: #1e293b;">คำสั่งซื้อ #${order.id}</h4>
+                            <p style="margin: 0.25rem 0; color: #64748b;"><strong>ศิลปิน:</strong> ${escapeHtml(order.artist_name || 'ไม่ระบุ')}</p>
+                            <p style="margin: 0.25rem 0; color: #64748b;"><strong>ราคา:</strong> ฿${parseFloat(order.price).toLocaleString()}</p>
+                            <p style="margin: 0.25rem 0; color: #64748b;"><strong>รายละเอียด:</strong> ${escapeHtml(order.detail)}</p>
+                            <small style="color: #94a3b8;">สั่งเมื่อ: ${new Date(order.created_at).toLocaleString('th-TH')}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
+                            ${order.status === 'waiting' ? `
+                                <div style="margin-top: 0.5rem;">
+                                    <button class="btn btn-primary btn-sm" onclick="confirmPayment(${order.id})">ยืนยันการชำระเงิน</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ${order.artwork_title ? `
+                        <div style="display: flex; align-items: center; gap: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                            ${order.artwork_image ? `<img src="${order.artwork_image}" alt="${order.artwork_title}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">` : ''}
+                            <div>
+                                <p style="margin: 0; font-weight: 500;">ผลงานอ้างอิง: ${escapeHtml(order.artwork_title)}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>ยังไม่มีคำสั่งซื้อ เริ่มสั่งงานจากศิลปินได้เลย</p>
+                    <button class="btn btn-primary mt-2" onclick="showExplore()">ค้นหาศิลปิน</button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Load customer dashboard error:', error);
+        const container = document.getElementById('customer-orders');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <p>เกิดข้อผิดพลาดในการโหลดคำสั่งซื้อ: ${error.message}</p>
+                    <button class="btn btn-outline mt-2" onclick="loadCustomerDashboard()">ลองใหม่</button>
+                </div>
+            `;
+        }
+    }
+}
+
+// Helper function to get status text
+function getStatusText(status) {
+    const statusMap = {
+        'waiting': 'รอชำระเงิน',
+        'paid': 'ชำระแล้ว',
+        'working': 'กำลังทำงาน',
+        'done': 'เสร็จสิ้น'
+    };
+    return statusMap[status] || status;
+}
+
+// Confirm payment function
+async function confirmPayment(orderId) {
+    if (!confirm('คุณแน่ใจหรือไม่ว่าได้ชำระเงินแล้ว?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/order/${orderId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ status: 'paid' })
+        });
+        
+        if (response.ok) {
+            showAlert('ยืนยันการชำระเงินสำเร็จ', 'success');
+            // Remove QR modal if exists
+            const qrModal = document.getElementById('qr-payment-modal');
+            if (qrModal) {
+                qrModal.remove();
+            }
+            loadCustomerDashboard();
+        } else {
+            const errorData = await response.json();
+            showAlert(errorData.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch (error) {
+        console.error('Confirm payment error:', error);
+        showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+    }
+}// 
+Artist dashboard function
+async function loadArtistDashboard() {
+    try {
+        console.log('Loading artist dashboard...');
+        const response = await fetch('/api/artist/dashboard', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to load dashboard');
+        }
+        
+        const data = await response.json();
+        console.log('Loaded artist dashboard data:', data);
+        
+        // Shop management
+        const shopManagement = document.getElementById('shop-management');
+        shopManagement.innerHTML = `
+            <div class="info-card">
+                <h3>ข้อมูลร้าน</h3>
+                <form id="shop-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ชื่อร้าน</label>
+                            <input type="text" name="name" value="${escapeHtml(data.shop.name)}" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>คำอธิบายร้าน</label>
+                        <textarea name="bio" rows="3" placeholder="เล่าเกี่ยวกับร้านของคุณ...">${escapeHtml(data.shop.bio || '')}</textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">อัปเดตข้อมูล</button>
+                    </div>
+                </form>
+                <div class="mt-3" style="padding-top: 1rem; border-top: 1px solid #e2e8f0;">
+                    <p><strong>สถานะร้าน:</strong> 
+                        <span class="order-status ${data.shop.is_approved ? 'status-done' : 'status-waiting'}">
+                            ${data.shop.is_approved ? 'อนุมัติแล้ว' : 'รออนุมัติ'}
+                        </span>
+                    </p>
+                    ${!data.shop.is_approved ? '<p style="color: #64748b; font-size: 0.875rem;">ร้านของคุณรออนุมัติจากแอดมิน</p>' : ''}
+                </div>
+            </div>
+        `;
+        
+        // Artworks
+        const artworks = document.getElementById('artist-artworks');
+        artworks.innerHTML = `
+            <div class="artwork-upload info-card">
+                <h3>เพิ่มผลงานใหม่</h3>
+                <form id="artwork-form" enctype="multipart/form-data">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ชื่อผลงาน</label>
+                            <input type="text" name="title" required placeholder="ชื่อผลงานของคุณ">
+                        </div>
+                        <div class="form-group">
+                            <label>ราคา (บาท)</label>
+                            <input type="number" name="price" min="1" required placeholder="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>คำอธิบายผลงาน</label>
+                        <textarea name="description" rows="3" placeholder="อธิบายรายละเอียดผลงาน เทคนิคที่ใช้ หรือแรงบันดาลใจ..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>รูปภาพผลงาน</label>
+                        <div class="file-upload">
+                            <input type="file" name="image" accept="image/*" required id="artwork-image">
+                            <label for="artwork-image" class="file-upload-label">
+                                <div class="file-upload-icon">📷</div>
+                                <div>คลิกเพื่อเลือกรูปภาพ</div>
+                                <small>รองรับ JPG, PNG, GIF (ขนาดไม่เกิน 5MB)</small>
+                            </label>
+                        </div>
+                        <div id="image-preview" class="mt-2"></div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">เพิ่มผลงาน</button>
+                    </div>
+                </form>
+            </div>
+            <div class="info-card">
+                <h3>ผลงานของฉัน (${data.artworks.length} ชิ้น)</h3>
+                ${data.artworks.length > 0 ? `
+                    <div class="artworks-grid">
+                        ${data.artworks.map(artwork => `
+                            <div class="artwork-card">
+                                <img src="${artwork.image_url}" alt="${artwork.title}" onerror="this.src='/images/default-artwork.png'">
+                                <div class="artwork-card-content">
+                                    <h4>${escapeHtml(artwork.title)}</h4>
+                                    <p>${escapeHtml(artwork.description || 'ไม่มีคำอธิบาย')}</p>
+                                    <div class="price">฿${parseFloat(artwork.price).toLocaleString()}</div>
+                                    <small style="color: #94a3b8;">เพิ่มเมื่อ ${new Date(artwork.created_at).toLocaleDateString('th-TH')}</small>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎨</div>
+                        <p>ยังไม่มีผลงาน เริ่มเพิ่มผลงานแรกของคุณ</p>
+                    </div>
+                `}
+            </div>
+        `;
+        
+        // Orders received by artist
+        const orders = document.getElementById('artist-orders');
+        orders.innerHTML = `
+            <div class="info-card">
+                <h3>คำสั่งซื้อที่ได้รับ (${data.orders.length} รายการ)</h3>
+                ${data.orders.length > 0 ? `
+                    ${data.orders.map(order => `
+                        <div class="order-card">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                                <div style="flex: 1;">
+                                    <h4 style="margin: 0 0 0.5rem 0; color: #1e293b;">คำสั่งซื้อ #${order.id}</h4>
+                                    <p style="margin: 0.25rem 0; color: #64748b;"><strong>ลูกค้า:</strong> ${escapeHtml(order.customer_name)}</p>
+                                    <p style="margin: 0.25rem 0; color: #64748b;"><strong>อีเมล:</strong> ${escapeHtml(order.customer_email)}</p>
+                                    <p style="margin: 0.25rem 0; color: #64748b;"><strong>ราคา:</strong> ฿${parseFloat(order.price).toLocaleString()}</p>
+                                    <p style="margin: 0.25rem 0; color: #64748b;"><strong>รายละเอียด:</strong> ${escapeHtml(order.detail)}</p>
+                                    <small style="color: #94a3b8;">สั่งเมื่อ: ${new Date(order.created_at).toLocaleString('th-TH')}</small>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span class="order-status status-${order.status}">${getStatusText(order.status)}</span>
+                                    <div style="margin-top: 0.5rem;">
+                                        <select onchange="updateOrderStatus(${order.id}, this.value)" style="padding: 0.25rem; border-radius: 4px; border: 1px solid #e2e8f0;">
+                                            <option value="waiting" ${order.status === 'waiting' ? 'selected' : ''}>รอชำระเงิน</option>
+                                            <option value="paid" ${order.status === 'paid' ? 'selected' : ''}>ชำระแล้ว</option>
+                                            <option value="working" ${order.status === 'working' ? 'selected' : ''}>กำลังทำงาน</option>
+                                            <option value="done" ${order.status === 'done' ? 'selected' : ''}>เสร็จสิ้น</option>
+                                        </select>
+                                    </div>
+                                    <div style="margin-top: 0.5rem;">
+                                        <button class="btn btn-outline btn-sm" onclick="showChat(${order.customer_id})">แชทกับลูกค้า</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                ` : `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>ยังไม่มีคำสั่งซื้อ รอลูกค้าสั่งงานจากคุณ</p>
+                    </div>
+                `}
+            </div>
+        `;
+        
+        // Setup form listeners
+        const shopForm = document.getElementById('shop-form');
+        if (shopForm) {
+            shopForm.addEventListener('submit', handleShopUpdate);
+        }
+        
+        const artworkForm = document.getElementById('artwork-form');
+        if (artworkForm) {
+            artworkForm.addEventListener('submit', handleArtworkAdd);
+        }
+        
+        // Setup image preview
+        const artworkImage = document.getElementById('artwork-image');
+        if (artworkImage) {
+            artworkImage.addEventListener('change', handleImagePreview);
+        }
+        
+    } catch (error) {
+        console.error('Load artist dashboard error:', error);
+        showAlert('เกิดข้อผิดพลาดในการโหลดแดชบอร์ด: ' + error.message, 'error');
+    }
+}
+
+// Update order status function
+async function updateOrderStatus(orderId, status) {
+    try {
+        const response = await fetch(`/api/artist/order/${orderId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ status })
+        });
+        
+        if (response.ok) {
+            showAlert('อัปเดตสถานะสำเร็จ', 'success');
+            loadArtistDashboard(); // Reload to show updated status
+        } else {
+            const errorData = await response.json();
+            showAlert(errorData.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch (error) {
+        console.error('Update order status error:', error);
+        showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+    }
+}
+
+// Handle shop update
+async function handleShopUpdate(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/artist/shop', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                name: formData.get('name').trim(),
+                bio: formData.get('bio').trim()
+            })
+        });
+        
+        if (response.ok) {
+            showAlert('อัปเดตข้อมูลร้านสำเร็จ', 'success');
+        } else {
+            const errorData = await response.json();
+            showAlert(errorData.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch (error) {
+        console.error('Update shop error:', error);
+        showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+    } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+    }
+}
+
+// Handle artwork add
+async function handleArtworkAdd(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    // Validate
+    const title = formData.get('title').trim();
+    const price = parseFloat(formData.get('price'));
+    const image = formData.get('image');
+    
+    if (!title || title.length < 2) {
+        showAlert('กรุณากรอกชื่อผลงานที่ถูกต้อง', 'error');
+        return;
+    }
+    
+    if (!price || price < 1) {
+        showAlert('กรุณากรอกราคาที่ถูกต้อง', 'error');
+        return;
+    }
+    
+    if (!image || image.size === 0) {
+        showAlert('กรุณาเลือกรูปภาพผลงาน', 'error');
+        return;
+    }
+    
+    if (image.size > 5 * 1024 * 1024) {
+        showAlert('ขนาดไฟล์ต้องไม่เกิน 5MB', 'error');
+        return;
+    }
+    
+    submitBtn.classList.add('loading');
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/api/artist/artwork', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            showAlert('เพิ่มผลงานสำเร็จ', 'success');
+            e.target.reset();
+            document.getElementById('image-preview').innerHTML = '';
+            loadArtistDashboard(); // Reload to show new artwork
+        } else {
+            const errorData = await response.json();
+            showAlert(errorData.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch (error) {
+        console.error('Add artwork error:', error);
+        showAlert('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+    } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
     }
 }

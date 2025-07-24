@@ -121,20 +121,22 @@ router.post('/create', authenticateToken, async (req, res) => {
 // Get user orders
 router.get('/my-orders', authenticateToken, async (req, res) => {
   try {
+    console.log('Getting orders for customer:', req.user.userId);
     const orders = await db.orders.findByCustomerId(req.user.userId);
+    console.log('Found orders:', orders.length);
     
     // Format orders to match frontend expectations
     const formattedOrders = orders.map(order => ({
       ...order,
-      artist_name: order.artist.name,
-      artwork_title: order.artwork?.title,
-      artwork_image: order.artwork?.image_url
+      artist_name: order.artist?.name || 'ไม่ระบุ',
+      artwork_title: order.artwork?.title || null,
+      artwork_image: order.artwork?.image_url || null
     }));
 
     res.json(formattedOrders);
   } catch (error) {
     console.error('Get orders error:', error);
-    res.status(500).json({ message: 'เกิดข้อผิดพลาด' });
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการโหลดคำสั่งซื้อ' });
   }
 });
 

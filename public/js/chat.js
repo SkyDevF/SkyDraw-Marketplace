@@ -125,27 +125,30 @@ function handleMessageKeyPress(event) {
 // Load customer messages
 async function loadCustomerMessages() {
     try {
+        console.log('Loading customer conversations...');
         const response = await fetch('/api/user/conversations', {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         
         if (response.ok) {
             const conversations = await response.json();
+            console.log('Loaded conversations:', conversations.length);
             const container = document.getElementById('customer-messages');
             
             if (conversations.length > 0) {
                 container.innerHTML = conversations.map(conv => `
-                    <div class="order-card" onclick="showChat(${conv.other_user_id})" style="cursor: pointer;">
+                    <div class="order-card" onclick="showChat(${conv.other_user_id})" style="cursor: pointer; transition: all 0.3s;">
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <img src="${conv.other_user_avatar || '/images/default-avatar.png'}" 
                                  alt="${conv.other_user_name}" 
-                                 style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                                 style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;"
+                                 onerror="this.src='/images/default-avatar.png'">
                             <div style="flex: 1;">
-                                <h4>${conv.other_user_name}</h4>
-                                <p style="color: #64748b; margin: 0.25rem 0;">${conv.last_message || 'ยังไม่มีข้อความ'}</p>
+                                <h4 style="margin: 0 0 0.25rem 0; color: #1e293b;">${escapeHtml(conv.other_user_name)}</h4>
+                                <p style="color: #64748b; margin: 0.25rem 0; font-size: 0.875rem;">${escapeHtml(conv.last_message || 'ยังไม่มีข้อความ')}</p>
                                 <small style="color: #94a3b8;">${conv.last_message_time ? new Date(conv.last_message_time).toLocaleString('th-TH') : ''}</small>
                             </div>
-                            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); showChat(${conv.other_user_id})">แชท</button>
+                            <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); showChat(${conv.other_user_id})" style="flex-shrink: 0;">แชท</button>
                         </div>
                     </div>
                 `).join('');
@@ -154,20 +157,26 @@ async function loadCustomerMessages() {
                     <div class="empty-state">
                         <div class="empty-state-icon">💬</div>
                         <p>ยังไม่มีการสนทนา เริ่มแชทกับศิลปินได้จากหน้าร้าน</p>
+                        <button class="btn btn-primary mt-2" onclick="showExplore()">ค้นหาศิลปิน</button>
                     </div>
                 `;
             }
         } else {
-            throw new Error('Failed to load conversations');
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to load conversations');
         }
     } catch (error) {
         console.error('Load customer messages error:', error);
-        document.getElementById('customer-messages').innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">⚠️</div>
-                <p>เกิดข้อผิดพลาดในการโหลดข้อความ</p>
-            </div>
-        `;
+        const container = document.getElementById('customer-messages');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <p>เกิดข้อผิดพลาดในการโหลดข้อความ: ${error.message}</p>
+                    <button class="btn btn-outline mt-2" onclick="loadCustomerMessages()">ลองใหม่</button>
+                </div>
+            `;
+        }
     }
 }
 

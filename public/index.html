@@ -96,8 +96,8 @@
             <div class="container">
                 <h2>แดชบอร์ดลูกค้า</h2>
                 <div class="dashboard-tabs">
-                    <button type="button" class="tab-btn active" onclick="showTab('orders')">คำสั่งซื้อของฉัน</button>
-                    <button type="button" class="tab-btn" onclick="showTab('messages')">ข้อความ</button>
+                    <button type="button" class="tab-btn active" onclick="showCustomerTab('orders', this)">คำสั่งซื้อของฉัน</button>
+                    <button type="button" class="tab-btn" onclick="showCustomerTab('messages', this)">ข้อความ</button>
                 </div>
                 <div id="customer-orders-tab" class="tab-content">
                     <div id="customer-orders"></div>
@@ -112,9 +112,9 @@
             <div class="container">
                 <h2>แดชบอร์ดศิลปิน</h2>
                 <div class="dashboard-tabs">
-                    <button type="button" class="tab-btn active" onclick="showTab('shop-manage')">จัดการร้าน</button>
-                    <button type="button" class="tab-btn" onclick="showTab('artworks')">ผลงาน</button>
-                    <button type="button" class="tab-btn" onclick="showTab('orders')">คำสั่งซื้อ</button>
+                    <button type="button" class="tab-btn active" onclick="showArtistTab('shop-manage', this)">จัดการร้าน</button>
+                    <button type="button" class="tab-btn" onclick="showArtistTab('artworks', this)">ผลงาน</button>
+                    <button type="button" class="tab-btn" onclick="showArtistTab('orders', this)">คำสั่งซื้อ</button>
                 </div>
                 <div id="shop-manage-tab" class="tab-content">
                     <div id="shop-management"></div>
@@ -132,9 +132,9 @@
             <div class="container">
                 <h2>แดชบอร์ดแอดมิน</h2>
                 <div class="dashboard-tabs">
-                    <button type="button" class="tab-btn active" onclick="showTab('stats')">สถิติ</button>
-                    <button type="button" class="tab-btn" onclick="showTab('pending-shops')">ร้านรออนุมัติ</button>
-                    <button type="button" class="tab-btn" onclick="showTab('all-orders')">คำสั่งซื้อทั้งหมด</button>
+                    <button type="button" class="tab-btn active" onclick="showAdminTab('stats', this)">สถิติ</button>
+                    <button type="button" class="tab-btn" onclick="showAdminTab('pending-shops', this)">ร้านรออนุมัติ</button>
+                    <button type="button" class="tab-btn" onclick="showAdminTab('all-orders', this)">คำสั่งซื้อทั้งหมด</button>
                 </div>
                 <div id="stats-tab" class="tab-content">
                     <div id="admin-stats"></div>
@@ -235,6 +235,7 @@
 
     <script src="js/main.js"></script>
     <script src="js/chat.js"></script>
+    <script src="js/complete-functions.js"></script>
 </body>
 
 </html>

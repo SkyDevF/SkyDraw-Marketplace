@@ -123,6 +123,16 @@ body {
     width: 100%;
 }
 
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.btn-xs {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+}
+
 /* Hero Section */
 .hero {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -663,6 +673,90 @@ section {
     color: #1e293b;
     border-bottom: 2px solid #e2e8f0;
     padding-bottom: 0.5rem;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .shop-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .shop-header img {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Hover effects */
+.order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.shop-card:hover,
+.artwork-card:hover {
+    transform: translateY(-3px);
+}
+
+/* Status colors */
+.status-waiting {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-paid {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-working {
+    background: #fde68a;
+    color: #92400e;
+}
+
+.status-done {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* Animation for new elements */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: slideInUp 0.5s ease-out;
+}
+
+/* Better spacing */
+.mt-2 {
+    margin-top: 1rem;
+}
+
+.mb-2 {
+    margin-bottom: 1rem;
+}
+
+/* Text utilities */
+.text-muted {
+    color: #64748b;
 }
 
 /* Responsive Design */
