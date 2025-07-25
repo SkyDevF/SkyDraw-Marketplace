@@ -87,7 +87,6 @@ const db = {
           users!inner(name, avatar)
         `)
         .eq('id', id)
-        .eq('is_approved', true)
         .single();
       
       if (error && error.code !== 'PGRST116') throw error;
@@ -103,6 +102,20 @@ const db = {
           artworks(count)
         `)
         .eq('is_approved', true)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+
+    async findAll() {
+      const { data, error } = await supabase
+        .from('shops')
+        .select(`
+          *,
+          users!inner(name, avatar),
+          artworks(count)
+        `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;

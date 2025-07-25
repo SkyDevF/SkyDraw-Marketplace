@@ -122,8 +122,8 @@ function handleMessageKeyPress(event) {
     }
 }
 
-// Load customer messages
-async function loadCustomerMessages() {
+// Load customer messages - moved to main.js to avoid conflicts
+window.loadCustomerMessages = async function() {
     try {
         console.log('Loading customer conversations...');
         const response = await fetch('/api/user/conversations', {
@@ -139,10 +139,10 @@ async function loadCustomerMessages() {
                 container.innerHTML = conversations.map(conv => `
                     <div class="order-card" onclick="showChat(${conv.other_user_id})" style="cursor: pointer; transition: all 0.3s;">
                         <div style="display: flex; align-items: center; gap: 1rem;">
-                            <img src="${conv.other_user_avatar || '/images/default-avatar.png'}" 
+                            <img src="${conv.other_user_avatar || '/images/default-avatar.svg'}" 
                                  alt="${conv.other_user_name}" 
                                  style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;"
-                                 onerror="this.src='/images/default-avatar.png'">
+                                 onerror="this.src='/images/default-avatar.svg'">
                             <div style="flex: 1;">
                                 <h4 style="margin: 0 0 0.25rem 0; color: #1e293b;">${escapeHtml(conv.other_user_name)}</h4>
                                 <p style="color: #64748b; margin: 0.25rem 0; font-size: 0.875rem;">${escapeHtml(conv.last_message || 'ยังไม่มีข้อความ')}</p>

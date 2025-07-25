@@ -7,10 +7,17 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Rate limiting
+// Rate limiting - more lenient for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 1000, // increased limit for development
+  skip: (req) => {
+    // Skip rate limiting for static files
+    return req.url.startsWith('/images/') || 
+           req.url.startsWith('/css/') || 
+           req.url.startsWith('/js/') ||
+           req.url.startsWith('/uploads/');
+  }
 });
 
 // Middleware

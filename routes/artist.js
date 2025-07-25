@@ -35,10 +35,24 @@ const upload = multer({
 // Get artist dashboard
 router.get('/dashboard', authenticateToken, requireRole(['artist']), async (req, res) => {
   try {
+    console.log('🎨 Loading artist dashboard for user:', req.user.userId);
+    
     // Get shop info
-    const shop = await db.shops.findByUserId(req.user.userId);
+    let shop = await db.shops.findByUserId(req.user.userId);
+    
+    // If no shop exists, create one automatically
     if (!shop) {
-      return res.status(404).json({ message: 'ไม่พบร้าน' });
+      console.log('🏪 No shop found, creating new shop for artist');
+      const user = await db.users.findById(req.user.userId);
+      
+      shop = await db.shops.create({
+        user_id: req.user.userId,
+        name: `${user.name}'s Art Shop`,
+        bio: 'ยินดีต้อนรับสู่ร้านของเรา',
+        is_approved: false
+      });
+      
+      console.log('✅ Shop created:', shop.id);
     }
 
     // Get artworks

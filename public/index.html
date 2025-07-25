@@ -47,8 +47,10 @@
                     <h1>ยินดีต้อนรับสู่ SkyDraw Marketplace</h1>
                     <p>ตลาดกลางสำหรับนักวาดภาพและลูกค้า พบกับผลงานศิลปะคุณภาพสูงและบริการวาดภาพตามสั่ง</p>
                     <div class="hero-buttons">
-                        <button type="button" class="btn btn-primary btn-large" onclick="showExplore()">เริ่มค้นหาร้าน</button>
-                        <button type="button" class="btn btn-outline btn-large" onclick="showRegister('artist')">เป็นศิลปิน</button>
+                        <button type="button" class="btn btn-primary btn-large"
+                            onclick="showExplore()">เริ่มค้นหาร้าน</button>
+                        <button type="button" class="btn btn-outline btn-large"
+                            onclick="showRegister('artist')">เป็นศิลปิน</button>
                     </div>
                 </div>
             </div>
@@ -96,7 +98,8 @@
             <div class="container">
                 <h2>แดชบอร์ดลูกค้า</h2>
                 <div class="dashboard-tabs">
-                    <button type="button" class="tab-btn active" onclick="showCustomerTab('orders', this)">คำสั่งซื้อของฉัน</button>
+                    <button type="button" class="tab-btn active"
+                        onclick="showCustomerTab('orders', this)">คำสั่งซื้อของฉัน</button>
                     <button type="button" class="tab-btn" onclick="showCustomerTab('messages', this)">ข้อความ</button>
                 </div>
                 <div id="customer-orders-tab" class="tab-content">
@@ -112,7 +115,8 @@
             <div class="container">
                 <h2>แดชบอร์ดศิลปิน</h2>
                 <div class="dashboard-tabs">
-                    <button type="button" class="tab-btn active" onclick="showArtistTab('shop-manage', this)">จัดการร้าน</button>
+                    <button type="button" class="tab-btn active"
+                        onclick="showArtistTab('shop-manage', this)">จัดการร้าน</button>
                     <button type="button" class="tab-btn" onclick="showArtistTab('artworks', this)">ผลงาน</button>
                     <button type="button" class="tab-btn" onclick="showArtistTab('orders', this)">คำสั่งซื้อ</button>
                 </div>
@@ -133,8 +137,10 @@
                 <h2>แดชบอร์ดแอดมิน</h2>
                 <div class="dashboard-tabs">
                     <button type="button" class="tab-btn active" onclick="showAdminTab('stats', this)">สถิติ</button>
-                    <button type="button" class="tab-btn" onclick="showAdminTab('pending-shops', this)">ร้านรออนุมัติ</button>
-                    <button type="button" class="tab-btn" onclick="showAdminTab('all-orders', this)">คำสั่งซื้อทั้งหมด</button>
+                    <button type="button" class="tab-btn"
+                        onclick="showAdminTab('pending-shops', this)">ร้านรออนุมัติ</button>
+                    <button type="button" class="tab-btn"
+                        onclick="showAdminTab('all-orders', this)">คำสั่งซื้อทั้งหมด</button>
                 </div>
                 <div id="stats-tab" class="tab-content">
                     <div id="admin-stats"></div>
@@ -204,7 +210,8 @@
             <form id="commission-form">
                 <div class="form-group">
                     <label for="commission-detail">รายละเอียดงาน</label>
-                    <textarea id="commission-detail" name="detail" rows="4" placeholder="อธิบายรายละเอียดงานที่ต้องการ..." required></textarea>
+                    <textarea id="commission-detail" name="detail" rows="4"
+                        placeholder="อธิบายรายละเอียดงานที่ต้องการ..." required></textarea>
                 </div>
                 <div class="form-group">
                     <label for="commission-price">ราคา (บาท)</label>
@@ -226,7 +233,8 @@
                     <!-- Messages will be loaded here -->
                 </div>
                 <div class="chat-input">
-                    <input type="text" id="message-input" placeholder="พิมพ์ข้อความ..." onkeypress="handleMessageKeyPress(event)">
+                    <input type="text" id="message-input" placeholder="พิมพ์ข้อความ..."
+                        onkeypress="handleMessageKeyPress(event)">
                     <button type="button" class="btn btn-primary" onclick="sendMessage()">ส่ง</button>
                 </div>
             </div>

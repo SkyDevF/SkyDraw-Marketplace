@@ -303,17 +303,19 @@ section {
     margin-bottom: 0.5rem;
     font-weight: 500;
     color: #374151;
+    font-size: 0.875rem;
 }
 
 .form-group input,
 .form-group textarea,
 .form-group select {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.875rem;
     border: 2px solid #e5e7eb;
     border-radius: 8px;
     font-size: 1rem;
-    transition: border-color 0.3s;
+    transition: all 0.3s;
+    background: #fafafa;
 }
 
 .form-group input:focus,
@@ -321,6 +323,49 @@ section {
 .form-group select:focus {
     outline: none;
     border-color: #1D4ED8;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-group input:hover,
+.form-group textarea:hover,
+.form-group select:hover {
+    border-color: #cbd5e1;
+    background: white;
+}
+
+/* Form validation styles */
+.form-group input:invalid,
+.form-group textarea:invalid {
+    border-color: #ef4444;
+}
+
+.form-group input:valid,
+.form-group textarea:valid {
+    border-color: #10b981;
+}
+
+/* Form row for side-by-side inputs */
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Form actions */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
 }
 
 /* Modals */
@@ -333,6 +378,8 @@ section {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content {
@@ -343,19 +390,47 @@ section {
     width: 90%;
     max-width: 500px;
     position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: slideInUp 0.3s ease-out;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .close {
     position: absolute;
     right: 1rem;
     top: 1rem;
-    font-size: 2rem;
+    font-size: 1.5rem;
     cursor: pointer;
     color: #64748b;
+    background: #f1f5f9;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    z-index: 10;
 }
 
 .close:hover {
     color: #1e293b;
+    background: #e2e8f0;
+    transform: scale(1.1);
+}
+
+/* Modal animations */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 /* Order Cards */
@@ -681,16 +756,16 @@ section {
         flex-direction: column;
         text-align: center;
     }
-    
+
     .shop-header img {
         width: 80px;
         height: 80px;
     }
-    
+
     .form-row {
         flex-direction: column;
     }
-    
+
     .btn-sm {
         padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
@@ -735,6 +810,7 @@ section {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -810,21 +886,18 @@ section {
     }
 }
 
-/* Animations */
+/* Simplified animations */
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(20px);
     }
-
     to {
         opacity: 1;
-        transform: translateY(0);
     }
 }
 
 .fade-in {
-    animation: fadeIn 0.6s ease-out;
+    animation: fadeIn 0.3s ease-out;
 }
 
 /* Loading Spinner */
@@ -851,6 +924,14 @@ section {
 /* Utility Classes */
 .hidden {
     display: none !important;
+}
+
+.show {
+    display: block !important;
+}
+
+.show {
+    display: block !important;
 }
 
 .text-center {

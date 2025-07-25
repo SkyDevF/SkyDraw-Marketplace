@@ -23,13 +23,17 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // Get all shops
 router.get('/shops', async (req, res) => {
   try {
-    const shops = await db.shops.findAllApproved();
+    // For development, show all shops (including unapproved ones)
+    // In production, you might want to use findAllApproved() instead
+    const shops = await db.shops.findAll();
+    
+    console.log('📊 Found shops:', shops.length);
     
     // Format the response to match frontend expectations
     const formattedShops = shops.map(shop => ({
       ...shop,
-      owner_name: shop.users.name,
-      owner_avatar: shop.users.avatar,
+      owner_name: shop.users?.name || 'Unknown',
+      owner_avatar: shop.users?.avatar || null,
       artwork_count: shop.artworks ? shop.artworks.length : 0
     }));
 
@@ -43,6 +47,8 @@ router.get('/shops', async (req, res) => {
 // Get shop by ID
 router.get('/shop/:id', async (req, res) => {
   try {
+    console.log('🏪 Loading shop detail for ID:', req.params.id);
+    
     const shop = await db.shops.findById(req.params.id);
     if (!shop) {
       return res.status(404).json({ message: 'ไม่พบร้าน' });
@@ -53,9 +59,11 @@ router.get('/shop/:id', async (req, res) => {
     // Format shop data
     const formattedShop = {
       ...shop,
-      owner_name: shop.users.name,
-      owner_avatar: shop.users.avatar
+      owner_name: shop.users?.name || 'Unknown',
+      owner_avatar: shop.users?.avatar || null
     };
+
+    console.log('✅ Shop loaded with', artworks.length, 'artworks');
 
     res.json({
       shop: formattedShop,
